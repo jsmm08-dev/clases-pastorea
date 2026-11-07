@@ -266,6 +266,24 @@
     @media(min-width:621px){.rt-barra{position:sticky;top:0;z-index:2}}
     @media(max-width:520px){.rt-barra{gap:5px;padding:8px}.rt-btn{width:38px;height:38px}.rt-sep{display:none}.rt-grupo{display:contents}}
     @media(prefers-reduced-motion:reduce){.rt,.rt-btn{transition:none}}
+  
+    /* Copia de la clase por correo */
+    .dlg-correo{width:min(480px,calc(100vw - 28px));max-height:calc(100vh - 28px);overflow:auto;border:0;border-radius:24px;padding:0;background:#fff;color:var(--tinta);box-shadow:0 24px 70px rgba(57,36,71,.28)}
+    .dlg-correo::backdrop{background:rgba(51,41,66,.55)}
+    .dlg-correo form{display:flex;flex-direction:column;gap:13px;padding:26px 26px 20px}
+    .dc-sello{font-size:34px;line-height:1}
+    .dlg-correo h2{margin:0;font:800 25px/1.15 var(--titulos);color:var(--uva-oscuro)}
+    .dlg-correo p{margin:0;color:var(--suave);font-weight:600;line-height:1.5}
+    .dlg-correo label{font-weight:800;color:var(--uva-oscuro);margin-top:2px}
+    .dlg-correo input{width:100%;min-height:53px;background:#fdfcff;border:1.5px solid #dcd3e5;border-radius:13px;padding:12px 15px;outline:none;color:var(--tinta);font-size:16px;font-weight:600;transition:border-color .15s,background .15s,box-shadow .15s}
+    .dlg-correo input:focus{border-color:var(--uva);background:#fff;box-shadow:0 0 0 4px #eee4f7}
+    .dlg-correo input[aria-invalid="true"]{border-color:var(--error);background:var(--error-bg)}
+    .dc-error{color:var(--error);font-weight:700;font-size:14px}
+    .dc-acciones{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:4px}
+    .dc-acciones .btn-enviar{margin-top:0}
+    .dc-sin{align-self:flex-start;background:none;border:0;padding:8px 2px;color:var(--suave);font-weight:700;font-size:14px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+    .gracias-copia{margin:0;font-weight:700;color:var(--uva-oscuro);max-width:510px}
+    @media(max-width:520px){.dlg-correo form{padding:22px 18px 16px}.dc-acciones .btn-enviar,.dc-acciones .btn-sec{width:100%}}
   </style>
 </head>
 <body>
@@ -368,8 +386,24 @@
       <p>¡Gracias por sembrar la Palabra en nuestros niños! Su clase ha quedado registrada y el pastor podrá revisarla.</p>
       <dl class="ficha" id="gracias-ficha"></dl>
       <p class="plazo" id="gracias-plazo"></p>
+      <p class="gracias-copia" id="gracias-copia" role="status" hidden></p>
       <button class="btn-sec" type="button" id="otra">＋ Preparar otra clase</button>
     </section>
+    <dialog class="dlg-correo" id="dlg-correo" aria-labelledby="dc-t" aria-describedby="dc-p">
+      <form id="dc-form" novalidate>
+        <span class="dc-sello" aria-hidden="true">📩</span>
+        <h2 id="dc-t">¿A qué correo le enviamos su clase?</h2>
+        <p id="dc-p">Le mandaremos una copia de la clase que va a enviar, con sus archivos, para que la tenga guardada.</p>
+        <label for="dc-correo">Su correo electrónico</label>
+        <input type="email" id="dc-correo" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="nombre@ejemplo.com" aria-describedby="dc-error">
+        <span class="dc-error" id="dc-error" role="alert" hidden></span>
+        <div class="dc-acciones">
+          <button class="btn-enviar" type="submit">💜 Enviar mi clase</button>
+          <button class="btn-sec" type="button" id="dc-volver">Volver</button>
+        </div>
+        <button class="dc-sin" type="button" id="dc-sin">Enviar sin recibir copia</button>
+      </form>
+    </dialog>
   </main>
   <footer>Escuela Dominical IPUE · Congregación de Alcorcón · Hecho con amor para nuestros pequeños ♡</footer>
 </div>
@@ -399,14 +433,14 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 function guardarLocal(k,v){try{localStorage.setItem('ccd.'+k,v)}catch(e){}}
 function leerLocal(k){try{return localStorage.getItem('ccd.'+k)||''}catch(e){return ''}}
 function espera(ms){return new Promise(function(r){setTimeout(r,ms)})}
-function llamar(fn,arg){if(DEMO)return espera(fn==='subirArchivo'?350:650).then(function(){if(fn==='subirArchivo')return{id:'demo'+Math.random().toString(36).slice(2,12)};var f=deIso(arg.fecha),d=diasEntre(hoy(),f);return{ok:true,dias:d,plazo:d>=D.diasMinimos?'En plazo':'Fuera de plazo',diasMinimos:D.diasMinimos,clase:arg.clase,tema:arg.tema,fecha:fechaLarga(f)+' de '+f.getFullYear(),archivos:(arg.archivos||[]).length}});
+function llamar(fn,arg){if(DEMO)return espera(fn==='subirArchivo'?350:650).then(function(){if(fn==='subirArchivo')return{id:'demo'+Math.random().toString(36).slice(2,12)};var f=deIso(arg.fecha),d=diasEntre(hoy(),f);return{ok:true,dias:d,plazo:d>=D.diasMinimos?'En plazo':'Fuera de plazo',diasMinimos:D.diasMinimos,clase:arg.clase,tema:arg.tema,fecha:fechaLarga(f)+' de '+f.getFullYear(),archivos:(arg.archivos||[]).length,copia:arg.correo?true:undefined,correo:arg.correo}});
   return fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({accion:fn,datos:arg}),redirect:'follow',credentials:'omit'})
     .then(function(r){if(!r.ok)throw new Error('El servidor no ha respondido bien ('+r.status+'). Inténtelo de nuevo en un momento.');return r.json()})
     .then(function(j){if(!j||j.ok!==true)throw new Error((j&&j.error)||'No se pudo completar el envío.');return j.datos})}
 function mensajeError(e){var m=String(e&&e.message||e||'').replace(/^(Error|Exception|ScriptError):\s*/i,'').trim();if(!m||/NetworkError|network|Failed to fetch|Load failed|timed? ?out/i.test(m))return 'No hay conexión con el servidor. Compruebe su conexión y vuelva a pulsar «Enviar mi clase».';return m}
 $('plazo-general').textContent='Envíela como mínimo '+D.diasMinimos+(D.diasMinimos===1?' día':' días')+' antes del domingo en que la imparte.';
 document.querySelectorAll('.max-arch').forEach(function(el){el.textContent=D.maxArchivos});
-if(DEMO)$('aviso-demo').hidden=false;
+if(DEMO){$('aviso-demo').hidden=false;D.copias=true}
 $('clases').innerHTML=D.clases.map(function(c,i){return '<label class="opcion"><input type="radio" name="clase" value="'+esc(c)+'" id="clase-'+i+'"><span>'+esc(c)+'</span></label>'}).join('');
 function domingos(n){var d=hoy(),r=[];d.setDate(d.getDate()+(7-d.getDay())%7);for(var i=0;i<n;i++){r.push(new Date(d));d.setDate(d.getDate()+7)}return r}
 function pintarFechas(){var h=hoy(),sel=$('fecha-sel'),actual=sel.value;sel.innerHTML='<option value="">Seleccione el domingo</option>'+domingos(8).map(function(d){var dd=diasEntre(h,d),extra=dd===0?' · hoy':dd<D.diasMinimos?' · fuera de plazo':'';return '<option value="'+iso(d)+'">'+mayus(fechaLarga(d))+(d.getFullYear()!==h.getFullYear()?' de '+d.getFullYear():'')+extra+'</option>'}).join('')+'<option value="otra">Otra fecha…</option>';if(actual)sel.value=actual}
@@ -452,8 +486,13 @@ function aBase64(blob){return new Promise(function(res,rej){var r=new FileReader
 function progreso(paso,total,txt){$('progreso').hidden=false;$('barra').style.width=Math.round(100*paso/Math.max(total,1))+'%';$('progreso-txt').textContent=txt}
 function bloquear(si){S.enviando=si;var b=$('btn-enviar');b.disabled=si;b.textContent=si?'⏳ Enviando…':'💜 Enviar mi clase';document.querySelectorAll('#form input,#form select,#form textarea').forEach(function(el){el.disabled=si});pintarArchivos('clase');pintarArchivos('apoyo')}
 function resumen(msg){var r=$('resumen-err');r.textContent=msg;r.hidden=!msg}
-function enviar(ev){ev.preventDefault();if(S.enviando)return;resumen('');var errores=validar();if(errores.length){resumen('Falta '+(errores.length===1?errores[0].nombre:errores.slice(0,-1).map(function(e){return e.nombre}).join(', ')+' y '+errores[errores.length-1].nombre)+'.');var p=errores[0].id,el=p==='clase'?document.querySelector('input[name="clase"]'):p==='fecha'?$('fecha-sel'):p==='archivo'?document.querySelector('[data-elegir="clase"]'):$(p);if(el){el.focus();if(el.scrollIntoView)el.scrollIntoView({block:'center',behavior:'smooth'})}return}var todos=S.archivos.clase.concat(S.archivos.apoyo);if(todos.some(function(it){return it.estado==='preparando'})){resumen('Se están preparando los archivos. Inténtelo de nuevo cuando estén listos.');return}if(todos.some(function(it){return it.estado==='error'})){resumen('Quite los archivos marcados en rojo antes de enviar.');return}var campoDe=function(it){return S.archivos.clase.indexOf(it)>=0?'clase':'apoyo'};var porSubir=todos.filter(function(it){return !it.id}),total=porSubir.length+1,paso=0;bloquear(true);var cadena=Promise.resolve();porSubir.forEach(function(it,i){cadena=cadena.then(function(){progreso(paso,total,'Subiendo archivo '+(i+1)+' de '+porSubir.length+'…');return aBase64(it.blob)}).then(function(datos){return llamar('subirArchivo',{envio:S.envio,campo:campoDe(it),nombre:it.nombre,tipo:it.tipo,datos:datos})}).then(function(r){if(!r||!r.id)throw new Error('No se obtuvo confirmación al subir el archivo.');it.id=r.id;paso++;pintarArchivos(campoDe(it))})});cadena.then(function(){progreso(paso,total,'Registrando la clase…');var f=fechaElegida();return llamar('enviarClase',{envio:S.envio,maestro:valor('maestro'),clase:claseElegida(),fecha:iso(f),tema:valor('tema'),texto:valor('texto'),versiculo:valor('versiculo'),objetivo:valor('objetivo'),desarrollo:desarrolloParaEnviar(),actividad:modoActual()==='redactar'?valor('actividad'):'',modoPreparacion:modoActual(),materiales:valor('materiales'),comentario:(valor('trimestre')?'Trimestre: '+valor('trimestre')+'\n':'')+valor('comentario'),archivos:todos.map(function(it){return{id:it.id,campo:campoDe(it)}})})}).then(function(r){if(!r||r.ok!==true)throw new Error('No se pudo confirmar el registro de la clase.');progreso(total,total,'¡Clase registrada!');guardarLocal('maestro',valor('maestro'));guardarLocal('clase',claseElegida());S.sucio=false;descartarBorrador();gracias(r)}).catch(function(e){bloquear(false);$('progreso').hidden=true;resumen(mensajeError(e))})}
-function gracias(r){var filas=[['Clase',r.clase],['Fecha',mayus(r.fecha)],['Tema',r.tema]];if(r.archivos)filas.push(['Archivos',r.archivos+(r.archivos===1?' archivo':' archivos')]);$('gracias-ficha').innerHTML=filas.map(function(f){return '<dt>'+esc(f[0])+'</dt><dd>'+esc(f[1])+'</dd>'}).join('');var p=$('gracias-plazo');if(r.plazo==='En plazo'){p.className='plazo ok';p.innerHTML='<b>✓ Enviada en plazo</b>, con '+r.dias+(r.dias===1?' día':' días')+' de antelación.'}else{p.className='plazo fuera';p.innerHTML='<b>Enviada fuera de plazo.</b> Recuerde enviarla con al menos '+r.diasMinimos+' días de antelación.'} $('form').hidden=true;$('intro').hidden=true;document.querySelector('.steps').hidden=true;$('gracias').hidden=false;window.scrollTo(0,0);$('gracias').focus()}
+function enviar(ev){ev.preventDefault();if(S.enviando)return;resumen('');var errores=validar();if(errores.length){resumen('Falta '+(errores.length===1?errores[0].nombre:errores.slice(0,-1).map(function(e){return e.nombre}).join(', ')+' y '+errores[errores.length-1].nombre)+'.');var p=errores[0].id,el=p==='clase'?document.querySelector('input[name="clase"]'):p==='fecha'?$('fecha-sel'):p==='archivo'?document.querySelector('[data-elegir="clase"]'):$(p);if(el){el.focus();if(el.scrollIntoView)el.scrollIntoView({block:'center',behavior:'smooth'})}return}var todos=S.archivos.clase.concat(S.archivos.apoyo);if(todos.some(function(it){return it.estado==='preparando'})){resumen('Se están preparando los archivos. Inténtelo de nuevo cuando estén listos.');return}if(todos.some(function(it){return it.estado==='error'})){resumen('Quite los archivos marcados en rojo antes de enviar.');return}if(D.copias&&!S.correoListo){pedirCorreo();return}S.correoListo=false;var campoDe=function(it){return S.archivos.clase.indexOf(it)>=0?'clase':'apoyo'};var porSubir=todos.filter(function(it){return !it.id}),total=porSubir.length+1,paso=0;bloquear(true);var cadena=Promise.resolve();porSubir.forEach(function(it,i){cadena=cadena.then(function(){progreso(paso,total,'Subiendo archivo '+(i+1)+' de '+porSubir.length+'…');return aBase64(it.blob)}).then(function(datos){return llamar('subirArchivo',{envio:S.envio,campo:campoDe(it),nombre:it.nombre,tipo:it.tipo,datos:datos})}).then(function(r){if(!r||!r.id)throw new Error('No se obtuvo confirmación al subir el archivo.');it.id=r.id;paso++;pintarArchivos(campoDe(it))})});cadena.then(function(){progreso(paso,total,'Registrando la clase…');var f=fechaElegida();return llamar('enviarClase',{envio:S.envio,maestro:valor('maestro'),clase:claseElegida(),fecha:iso(f),tema:valor('tema'),texto:valor('texto'),versiculo:valor('versiculo'),objetivo:valor('objetivo'),desarrollo:desarrolloParaEnviar(),actividad:modoActual()==='redactar'?valor('actividad'):'',modoPreparacion:modoActual(),materiales:valor('materiales'),comentario:(valor('trimestre')?'Trimestre: '+valor('trimestre')+'\n':'')+valor('comentario'),correo:D.copias?(S.correo||''):'',archivos:todos.map(function(it){return{id:it.id,campo:campoDe(it)}})})}).then(function(r){if(!r||r.ok!==true)throw new Error('No se pudo confirmar el registro de la clase.');progreso(total,total,'¡Clase registrada!');guardarLocal('maestro',valor('maestro'));if(S.correo)guardarLocal('correo',S.correo);guardarLocal('clase',claseElegida());S.sucio=false;descartarBorrador();gracias(r)}).catch(function(e){bloquear(false);$('progreso').hidden=true;resumen(mensajeError(e))})}
+function gracias(r){var filas=[['Clase',r.clase],['Fecha',mayus(r.fecha)],['Tema',r.tema]];if(r.archivos)filas.push(['Archivos',r.archivos+(r.archivos===1?' archivo':' archivos')]);$('gracias-ficha').innerHTML=filas.map(function(f){return '<dt>'+esc(f[0])+'</dt><dd>'+esc(f[1])+'</dd>'}).join('');var p=$('gracias-plazo');if(r.plazo==='En plazo'){p.className='plazo ok';p.innerHTML='<b>✓ Enviada en plazo</b>, con '+r.dias+(r.dias===1?' día':' días')+' de antelación.'}else{p.className='plazo fuera';p.innerHTML='<b>Enviada fuera de plazo.</b> Recuerde enviarla con al menos '+r.diasMinimos+' días de antelación.'} var gc=$('gracias-copia');if(r.copia===true){gc.textContent='📩 Le hemos enviado una copia a '+r.correo+'. Si no la ve, mire en la carpeta de correo no deseado.';gc.hidden=false}else if(r.copia===false){gc.textContent='No se pudo enviar la copia a su correo, pero la clase sí ha quedado registrada.';gc.hidden=false}else gc.hidden=true;$('form').hidden=true;$('intro').hidden=true;document.querySelector('.steps').hidden=true;$('gracias').hidden=false;window.scrollTo(0,0);$('gracias').focus()}
+function correoValido(v){return /^[^\s@<>()",;:]+@[^\s@<>()",;:]+\.[A-Za-z]{2,}$/.test(v)}
+function errCorreo(m){var e=$('dc-error');e.textContent=m;e.hidden=!m;$('dc-correo').setAttribute('aria-invalid',m?'true':'false')}
+function pedirCorreo(){var d=$('dlg-correo'),i=$('dc-correo');if(!i.value)i.value=S.correo||leerLocal('correo');errCorreo('');if(d.showModal)d.showModal();else d.setAttribute('open','');setTimeout(function(){i.focus()},30)}
+function cerrarCorreo(){var d=$('dlg-correo');if(d.open){if(d.close)d.close();else d.removeAttribute('open')}}
+function seguirEnvio(correo){S.correo=correo;S.correoListo=true;cerrarCorreo();enviar({preventDefault:function(){}})}
 function otra(){var maestro=valor('maestro'),clase=claseElegida();$('form').reset();Object.keys(S.archivos).forEach(function(c){S.archivos[c].forEach(function(it){if(it.vista)URL.revokeObjectURL(it.vista)});S.archivos[c]=[]});S.envio=nuevoId();S.sucio=false;bloquear(false);$('progreso').hidden=true;resumen('');$('maestro').value=maestro;if(clase){var r=Array.from(document.querySelectorAll('input[name="clase"]')).find(function(x){return x.value===clase});if(r)r.checked=true}pintarFechas();pintarPlazo();sincronizarModo();actualizarContador();$('vista-clase').hidden=true;mostrarBorrador();$('gracias').hidden=true;$('form').hidden=false;$('intro').hidden=false;document.querySelector('.steps').hidden=false;window.scrollTo(0,0);$('tema').focus()}
 
  // ── Desarrollo estructurado conforme a la plantilla i137 ─────────────────────
@@ -508,6 +547,10 @@ document.addEventListener('click',function(ev){var b=ev.target.closest('[data-el
 ['clase','apoyo'].forEach(function(campo){$('arch-'+campo).addEventListener('change',function(){if(this.files&&this.files.length)anadir(campo,this.files);this.value=''})});
 $('form').addEventListener('input',function(ev){S.sucio=true;if(!S.enviando)resumen('');var id=ev.target.id||(ev.target.name==='clase'?'clase':'');if(id&&ev.target.value)limpiarError(id==='fecha-otra'||id==='fecha-sel'?'fecha':id);if($('vista-clase')&&!$('vista-clase').hidden)renderVista()});
 $('form').addEventListener('change',function(ev){if(ev.target.name==='clase')limpiarError('clase')});
+$('dc-form').addEventListener('submit',function(ev){ev.preventDefault();var v=$('dc-correo').value.trim();if(!correoValido(v)){errCorreo(v?'Revise el correo: debe ser como nombre@ejemplo.com.':'Escriba su correo para recibir la copia.');$('dc-correo').focus();return}seguirEnvio(v)});
+$('dc-sin').addEventListener('click',function(){seguirEnvio('')});
+$('dc-volver').addEventListener('click',cerrarCorreo);
+$('dc-correo').addEventListener('input',function(){errCorreo('')});
 window.addEventListener('beforeunload',function(ev){if(S.sucio&&!S.enviando){ev.preventDefault();ev.returnValue=''}});
 if(!DEMO){llamar('config').then(function(c){
   if(!c||!Array.isArray(c.clases))return;
